@@ -45,7 +45,8 @@ type FS interface {
 	Stat(name string) (FileInfo, error)
 
 	// Put puts the given file into the underlying filesystem. This should
-	// return the file as it is stored in the underlying filesystem.
+	// return the file as it is stored in the underlying filesystem. This should
+	// also return the file with the offset set to the beginning.
 	Put(f File) (File, error)
 
 	// Remove removes the named file from the filesystem.
