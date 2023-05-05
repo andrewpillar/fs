@@ -218,3 +218,30 @@ func Test_ReadOnly(t *testing.T) {
 	}
 	t.Fatal("expected ReadOnlyStore.Put to error, it did not")
 }
+
+func Test_Unique(t *testing.T) {
+	dir := tmpdir(t)
+	defer os.RemoveAll(dir)
+
+	store := Unique(New(dir))
+
+	buf := generateData(t, 32<<20)
+
+	f, err := ReadFile(t.Name(), bytes.NewReader(buf))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := store.Put(f); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := store.Put(f); err != nil {
+		if !errors.Is(err, ErrExist) {
+			t.Fatalf("unexpected error, expected=%q, got=%q\n", ErrExist, err)
+		}
+		return
+	}
+	t.Fatal("expected subsequent call to store.Put to error, it did not")
+}

@@ -310,6 +310,46 @@ func (s nullFS) Put(f File) (File, error) {
 
 func (nullFS) Remove(string) error { return nil }
 
+type uniqueFS struct {
+	FS
+}
+
+// Unique returns a filesystem that will error with ErrExist when multiple files
+// with the same name are stored in it.
+func Unique(s FS) FS {
+	return uniqueFS{
+		FS: s,
+	}
+}
+
+func (s uniqueFS) Sub(dir string) (FS, error) {
+	fs, err := s.FS.Sub(dir)
+
+	if err != nil {
+		return nil, err
+	}
+	return Unique(fs), nil
+}
+
+func (s uniqueFS) Put(f File) (File, error) {
+	info, err := f.Stat()
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.Stat(info.Name())
+
+	if errors.Is(err, ErrNotExist) {
+		return s.FS.Put(f)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return nil, ErrExist
+}
+
 type hashFS struct {
 	FS
 
@@ -324,6 +364,15 @@ func Hash(s FS, mech func() hash.Hash) FS {
 		FS:   s,
 		mech: mech,
 	}
+}
+
+func (s *hashFS) Sub(dir string) (FS, error) {
+	fs, err := s.FS.Sub(dir)
+
+	if err != nil {
+		return nil, err
+	}
+	return Hash(fs, s.mech), nil
 }
 
 func (s *hashFS) Put(f File) (File, error) {
@@ -456,6 +505,15 @@ func ReadOnly(s FS) FS {
 	return readOnly{
 		FS: s,
 	}
+}
+
+func (s readOnly) Sub(dir string) (FS, error) {
+	fs, err := s.FS.Sub(dir)
+
+	if err != nil {
+		return nil, err
+	}
+	return ReadOnly(fs), nil
 }
 
 func (s readOnly) Put(f File) (File, error) {
