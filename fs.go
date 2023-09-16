@@ -425,9 +425,17 @@ func (e SizeError) Error() string {
 }
 
 // Limit returns a filesystem that limits the size of files put in it to the
-// given limit. If any file that is put in the filesystem exceeds the limit then
-// SizeError is returned in the *PathError.
+// given limit. If the given filesystem already implements a limit, then the
+// limit is changed to the new one. If any file that is put in the filesystem
+// exceeds the limit, then SizeError is returned in the *PathError.
 func Limit(s FS, n int64) FS {
+	if l, ok := s.(limit); ok {
+		return limit{
+			FS:    l.FS,
+			limit: n,
+		}
+	}
+
 	return limit{
 		FS:    s,
 		limit: n,

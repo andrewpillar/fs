@@ -129,6 +129,21 @@ func Test_Limit(t *testing.T) {
 	t.Fatal("expected LimitStore.Put to error, it did not")
 }
 
+func Test_LimitChange(t *testing.T) {
+	dir := tmpdir(t)
+	defer os.RemoveAll(dir)
+
+	store := Limit(New(dir), 100)
+
+	newLimit := int64(4096)
+
+	store2 := Limit(store, newLimit)
+
+	if n := store2.(limit).limit; n != newLimit {
+		t.Fatalf("unexpected store limit, expected=%d, got=%d\n", newLimit, n)
+	}
+}
+
 func Test_WriteOnly(t *testing.T) {
 	dir := tmpdir(t)
 	defer os.RemoveAll(dir)
